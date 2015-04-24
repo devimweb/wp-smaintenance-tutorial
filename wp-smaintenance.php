@@ -74,8 +74,8 @@ class WP_SMaintenance
         $domain = 'wp-smaintenance';
         $locale = apply_filters( 'plugin_locale', get_locale(), $domain );
 
-        load_textdomain( $domain, trailingslashit( WP_LANG_DIR ) . 'wp-smaintenance/wp-smaintenance-' . $locale . '.mo' );
-        load_plugin_textdomain( $domain, FALSE, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+        //load_textdomain( $domain, trailingslashit( WP_LANG_DIR ) . 'wp-smaintenance/wp-smaintenance-' . $locale . '.mo' );
+        load_plugin_textdomain( 'wp-smaintenance', FALSE, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
     }
 
     /**
@@ -98,6 +98,7 @@ class WP_SMaintenance
             update_option( 'smaintenance_settings', $default );
         }
         $this->smaintenance_settings = get_option( 'smaintenance_settings' );
+        if (!isset($this->smaintenance_settings['status'])) $this->smaintenance_settings['status'] = FALSE;
     }
 
     /**
@@ -106,14 +107,14 @@ class WP_SMaintenance
     function admin_init(){
         add_settings_section(
             'section_maintenance',
-            __('Configure the details of the maintenance mode'),
+            __('Configure the details of the maintenance mode', 'wp-smaintenance'),
             '__return_false',
             'wp-smaintenance'
         );
 
         add_settings_field(
             'status',
-            __('Enable maintenance mode:'),
+            __('Enable maintenance mode:', 'wp-smaintenance'),
             array( &$this, 'html_input_status' ),
             'wp-smaintenance',
             'section_maintenance'
@@ -121,7 +122,7 @@ class WP_SMaintenance
 
         add_settings_field(
             'description',
-            __('Motive of maintenance:'),
+            __('Motive of maintenance:', 'wp-smaintenance'),
             array( &$this, 'html_input_description' ),
             'wp-smaintenance',
             'section_maintenance'
@@ -129,7 +130,7 @@ class WP_SMaintenance
 
         add_settings_field(
             'url_allowed',
-            __('The following pages have free access:'),
+            __('The following pages have free access:', 'wp-smaintenance'),
             array( &$this, 'html_input_url_allowed' ),
             'wp-smaintenance',
             'section_maintenance'
@@ -137,7 +138,7 @@ class WP_SMaintenance
 
         add_settings_field(
             'role_allow',
-            __('Who can access:'),
+            __('Who can access:', 'wp-smaintenance'),
             array( &$this, 'html_input_role_allow' ),
             'wp-smaintenance',
             'section_maintenance'
@@ -156,7 +157,7 @@ class WP_SMaintenance
         if ($this->smaintenance_settings['status'] == TRUE) :
             $return    = $this->calc_time_maintenance();
 
-            $message = sprintf( __("The maintenance mode will end in <strong>%s</strong>"), $return['return-date'] );
+            $message = sprintf( __("The maintenance mode will end in <strong>%s</strong>", 'wp-smaintenance'), $return['return-date'] );
             echo ("<p><span class='description'>$message</span></p><br/>");
         endif;
 
@@ -168,7 +169,7 @@ class WP_SMaintenance
         <input type="hidden" name="smaintenance_settings[time_activated]" value="<?php echo current_time('timestamp'); ?>">
 
         <label>
-            <input type="checkbox" id="status" name="smaintenance_settings[status]" value="TRUE" <?php checked( 'TRUE', $this->smaintenance_settings['status'] ) ?> /> <?php _e('I want to enable'); ?>
+            <input type="checkbox" id="status" name="smaintenance_settings[status]" value="TRUE" <?php checked( 'TRUE', $this->smaintenance_settings['status'] ) ?> /> <?php _e('I want to enable', 'wp-smaintenance'); ?>
         </label>
 
         <br/>
@@ -176,9 +177,9 @@ class WP_SMaintenance
             <tbody>
                 <tr>
                     <td><strong><?php _e('Back in:'); ?></strong></td>
-                    <td><input type="text" id="duration_days" name="smaintenance_settings[duration_days]" value="<?php echo $days; ?>" size="4" maxlength="5"> <label for="duration_days"><?php _e('Days'); ?></label></td>
-                    <td><input type="text" id="duration_hours" name="smaintenance_settings[duration_hours]" value="<?php echo $hours; ?>" size="4" maxlength="5"> <label for="duration_hours"><?php _e('Hours'); ?></label></td>
-                    <td><input type="text" id="duration_minutes" name="smaintenance_settings[duration_minutes]" value="<?php echo $mins; ?>" size="4" maxlength="5"> <label for="duration_minutes"><?php _e('Minutes'); ?></label></td>
+                    <td><input type="text" id="duration_days" name="smaintenance_settings[duration_days]" value="<?php echo $days; ?>" size="4" maxlength="5"> <label for="duration_days"><?php _e('Days', 'wp-smaintenance'); ?></label></td>
+                    <td><input type="text" id="duration_hours" name="smaintenance_settings[duration_hours]" value="<?php echo $hours; ?>" size="4" maxlength="5"> <label for="duration_hours"><?php _e('Hours', 'wp-smaintenance'); ?></label></td>
+                    <td><input type="text" id="duration_minutes" name="smaintenance_settings[duration_minutes]" value="<?php echo $mins; ?>" size="4" maxlength="5"> <label for="duration_minutes"><?php _e('Minutes', 'wp-smaintenance'); ?></label></td>
                 </tr>
             </tbody>
         </table>
@@ -207,7 +208,7 @@ class WP_SMaintenance
      */
     public function html_input_role_allow(){
         //INPUT FOR ALLOW BACK
-        $html = '<label>'. __('Access the administrative panel:');
+        $html = '<label>'. __('Access the administrative panel:', 'wp-smaintenance');
         $html .= ' <select id="role_allow_back" name="smaintenance_settings[role_allow_back]">
                     <option value="manage_options" ' . selected( $this->smaintenance_settings['role_allow_back'], 'manage_options', false) . '>Ninguém</option>
                     <option value="manage_categories" ' . selected( $this->smaintenance_settings['role_allow_back'], 'manage_categories', false) . '>Editor</option>
@@ -218,7 +219,7 @@ class WP_SMaintenance
         $html .= '</label><br />';
 
         //INPUT FOR ALLOW FRONT
-        $html .= '<label>'. __('Access the public site:');
+        $html .= '<label>'. __('Access the public site:', 'wp-smaintenance');
         $html .= ' <select id="role_allow_front" name="smaintenance_settings[role_allow_front]">
                     <option value="manage_options" ' . selected( $this->smaintenance_settings['role_allow_front'], 'manage_options', false) . '>Ninguém</option>
                     <option value="manage_categories" ' . selected( $this->smaintenance_settings['role_allow_front'], 'manage_categories', false) . '>Editor</option>
@@ -237,8 +238,8 @@ class WP_SMaintenance
     function admin_menu(){
         add_submenu_page(
             'options-general.php',
-            __('Maintenance mode'),
-            __('Maintenance mode'),
+            __('Maintenance mode', 'wp-smaintenance'),
+            __('Maintenance mode', 'wp-smaintenance'),
             'administrator',
             'wp-smaintenance',
             array( &$this, 'html_form_settings' )
@@ -325,7 +326,7 @@ class WP_SMaintenance
      *
      */
     function login_message( $message ){
-        $message = apply_filters( 'smaintenance_loginnotice', __('Currently this site is in MAINTENANCE MODE.') );
+        $message = apply_filters( 'smaintenance_loginnotice', __('Currently this site is in MAINTENANCE MODE.', 'wp-smaintenance') );
 
         return '<div id="login_error"><p class="text-center">'. $message .'</p></div>';
     }
@@ -337,8 +338,8 @@ class WP_SMaintenance
     {
         $edit_url = site_url() . '/wp-admin/admin.php?page=wp-smaintenance';
 
-        $message1 = __('Currently this site is in MAINTENANCE MODE.');
-        $message2 = sprintf( __('To exit the maintenance mode just change the settings <a href="%s">clicking here</a>.'), $edit_url);
+        $message1 = __('Currently this site is in MAINTENANCE MODE.', 'wp-smaintenance');
+        $message2 = sprintf( __('To exit the maintenance mode just change the settings <a href="%s">clicking here</a>.', 'wp-smaintenance'), $edit_url);
 
         $message = apply_filters( 'smaintenance_adminnotice', $message1. ' '. $message2 );
 
