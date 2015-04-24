@@ -13,8 +13,9 @@
 </head>
 <body <?php body_class(); ?>>
     <?php
-    $retorno = Class_Maintenance::calc_time_manut();
-    $retorno = $retorno['return_date'].' ás '.$retorno['return_time'];
+    $retorno = WP_SMaintenance::calc_time_maintenance();
+    $retorno = $retorno['return-date'];
+
     echo "<p style='text-align: center; display: block; margin-top: 50px;'>O site está em manutenção.<br/>A previsão de retorno é para <strong> $retorno; </strong></p>";
     ?>
 

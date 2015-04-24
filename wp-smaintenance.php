@@ -52,19 +52,18 @@ class WP_SMaintenance
      * Initialize the plugin public actions.
      */
     private function __construct() {
-        // Load plugin text domain
         add_action( 'init', array( $this, 'load_textdomain' ) );
 
-        add_action( 'init', array( $this, 'plugin_settings' ) );
+        $this->plugin_settings();
+
         add_action( 'admin_init', array( &$this, 'admin_init' ));
         add_action( 'admin_menu', array( &$this, 'admin_menu' ));
 
-        if ($this->smaintenance_settings['status'] == 'TRUE') {
-            //add_filter( 'loginMessage', array( &$this, 'loginMessage' ));
-            //add_action( 'admin_notices', array( &$this, 'admin_notices' ));
-            //add_action( 'wp_loaded', array( &$this, 'apply_manut_mode' ));
-            //add_action( 'after_body', array( &$this, 'after_body' ));
-            //add_filter( 'wp_title', array( &$this, 'wpTitle' ), 9999, 2 );
+        if ($this->smaintenance_settings['status'] === 'TRUE') {
+            add_filter( 'login_message', array( &$this, 'login_message' ));
+            add_action( 'admin_notices', array( &$this, 'admin_notices' ));
+            add_action( 'wp_loaded', array( &$this, 'apply_manut_mode' ));
+            add_filter( 'wp_title', array( &$this, 'wpTitle' ), 9999, 2 );
         }
     }
 
@@ -320,6 +319,138 @@ class WP_SMaintenance
             }
         }
         return $return_arr;
+    }
+
+    /**
+     *
+     */
+    function login_message( $message ){
+        $message = apply_filters( 'smaintenance_loginnotice', __('Currently this site is in MAINTENANCE MODE.') );
+
+        return '<div id="login_error"><p class="text-center">'. $message .'</p></div>';
+    }
+
+    /**
+     *
+     */
+    function admin_notices()
+    {
+        $edit_url = site_url() . '/wp-admin/admin.php?page=wp-smaintenance';
+
+        $message1 = __('Currently this site is in MAINTENANCE MODE.');
+        $message2 = sprintf( __('To exit the maintenance mode just change the settings <a href="%s">clicking here</a>.'), $edit_url);
+
+        $message = apply_filters( 'smaintenance_adminnotice', $message1. ' '. $message2 );
+
+        echo '<div id="message" class="error"><p>'. $message .'</p></div>';
+    }
+
+    /**
+     *
+     */
+    function apply_manut_mode()
+    {
+        if ( strstr($_SERVER['PHP_SELF'],'wp-login.php')) return;
+        if ( strstr($_SERVER['PHP_SELF'], 'wp-admin/admin-ajax.php')) return;
+        if ( strstr($_SERVER['PHP_SELF'], 'async-upload.php')) return;
+        if ( strstr(htmlspecialchars($_SERVER['REQUEST_URI']), '/plugins/')) return;
+        if ( strstr($_SERVER['PHP_SELF'], 'upgrade.php')) return;
+        if ( $this->check_url_allowed()) return;
+
+        //Never show maintenance page in wp-admin
+        if ( is_admin() || strstr(htmlspecialchars($_SERVER['REQUEST_URI']), '/wp-admin/') ) {
+            if ( !is_user_logged_in() ) {
+                auth_redirect();
+            }
+            if ( $this->user_allow('admin') ) {
+                return;
+            } else {
+                $this->display_maintenance_page();
+            }
+        } else {
+            if( $this->user_allow('public') ) {
+                return;
+            } else {
+                $this->display_maintenance_page();
+            }
+        }
+    }
+
+
+    /**
+     *
+     */
+    function display_maintenance_page()
+    {
+        $time_maintenance = $this->calc_time_maintenance();
+        $time_maintenance = $time_maintenance['remaining-seconds'];
+
+        //Define header as unavailable
+        header('HTTP/1.1 503 Service Temporarily Unavailable');
+        header('Status: 503 Service Temporarily Unavailable');
+
+        if ( $time_maintenance > 1 ) header('Retry-After: ' . $time_maintenance );
+
+        // Check what used in page will be visitor redirect
+        $file503 = get_template_directory() . '/503.php';
+        if (file_exists($file503) == FALSE) {
+            $file503 = dirname(  __FILE__  ) . '/503-default.php';
+        }
+
+        // Show page
+        include($file503);
+
+        exit();
+    }
+
+
+    /**
+     *
+     */
+    function check_url_allowed()
+    {
+        $urlarray = $this->smaintenance_settings['url_allowed'];
+        $urlarray = preg_replace("/\r|\n/s", ' ', $urlarray); //TRANSFORM BREAK LINES IN SPACE
+        $urlarray = explode(' ', $urlarray); //TRANSFORM STRING IN ARRAY
+        $oururl = 'http://' . $_SERVER['HTTP_HOST'] . htmlspecialchars($_SERVER['REQUEST_URI']);
+        foreach ($urlarray as $expath) {
+            if (!empty($expath)) {
+                $expath = str_replace(' ', '', $expath);
+                if (strpos($oururl, $expath) !== false) return true;
+                if ( (strtoupper($expath) == '[HOME]') && ( trailingslashit(get_bloginfo('url')) == trailingslashit($oururl) ) )    return true;
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * Cria um formulário pra ser usada pra configuração do tema
+     */
+    function user_allow($where)
+    {
+        if ($where == 'public') {
+            $optval = $this->smaintenance_settings['role_allow_front'];
+        } elseif ($where == 'admin') {
+            $optval = $this->smaintenance_settings['role_allow_back'];
+        } else {
+            return false;
+        }
+
+        if ( $optval == 'manage_options' && current_user_can('manage_options') ) { return true; }
+        elseif ( $optval == 'manage_categories' && current_user_can('manage_categories') ) { return true; }
+        elseif ( $optval == 'publish_posts' && current_user_can('publish_posts') ) { return true;   }
+        elseif ( $optval == 'edit_posts' && current_user_can('edit_posts') ) { return true; }
+        elseif ( $optval == 'read' && current_user_can('read') ) { return true; }
+        else { return false; }
+    }
+
+    /**
+     *
+     */
+    function wpTitle()
+    {
+        return get_bloginfo( 'name' ). ' | Modo Manutenção';
     }
 
 }
