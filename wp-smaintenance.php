@@ -54,7 +54,7 @@ class WP_SMaintenance
     private function __construct() {
         add_action( 'init', array( $this, 'load_textdomain' ) );
 
-        $this->plugin_settings();
+        $this->do_plugin_settings();
 
         add_action( 'admin_init', array( &$this, 'admin_init' ));
         add_action( 'admin_menu', array( &$this, 'admin_menu' ));
@@ -62,7 +62,7 @@ class WP_SMaintenance
         if ($this->smaintenance_settings['status'] === 'TRUE') {
             add_filter( 'login_message', array( &$this, 'login_message' ));
             add_action( 'admin_notices', array( &$this, 'admin_notices' ));
-            add_action( 'wp_loaded', array( &$this, 'apply_manut_mode' ));
+            add_action( 'wp_loaded', array( &$this, 'apply_maintenance_mode' ));
             add_filter( 'wp_title', array( &$this, 'wpTitle' ), 9999, 2 );
         }
     }
@@ -81,7 +81,7 @@ class WP_SMaintenance
     /**
      *
      */
-    public function plugin_settings() {
+    public function do_plugin_settings() {
         if( false == get_option( 'smaintenance_settings' )) {
             add_option( 'smaintenance_settings' );
             $default = array(
@@ -325,31 +325,7 @@ class WP_SMaintenance
     /**
      *
      */
-    function login_message( $message ){
-        $message = apply_filters( 'smaintenance_loginnotice', __('Currently this site is in MAINTENANCE MODE.', 'wp-smaintenance') );
-
-        return '<div id="login_error"><p class="text-center">'. $message .'</p></div>';
-    }
-
-    /**
-     *
-     */
-    function admin_notices()
-    {
-        $edit_url = site_url() . '/wp-admin/admin.php?page=wp-smaintenance';
-
-        $message1 = __('Currently this site is in MAINTENANCE MODE.', 'wp-smaintenance');
-        $message2 = sprintf( __('To exit the maintenance mode just change the settings <a href="%s">clicking here</a>.', 'wp-smaintenance'), $edit_url);
-
-        $message = apply_filters( 'smaintenance_adminnotice', $message1. ' '. $message2 );
-
-        echo '<div id="message" class="error"><p>'. $message .'</p></div>';
-    }
-
-    /**
-     *
-     */
-    function apply_manut_mode()
+    function apply_maintenance_mode()
     {
         if ( strstr($_SERVER['PHP_SELF'],'wp-login.php')) return;
         if ( strstr($_SERVER['PHP_SELF'], 'wp-admin/admin-ajax.php')) return;
@@ -444,6 +420,30 @@ class WP_SMaintenance
         elseif ( $optval == 'edit_posts' && current_user_can('edit_posts') ) { return true; }
         elseif ( $optval == 'read' && current_user_can('read') ) { return true; }
         else { return false; }
+    }
+
+    /**
+     *
+     */
+    function login_message( $message ){
+        $message = apply_filters( 'smaintenance_loginnotice', __('Currently this site is in MAINTENANCE MODE.', 'wp-smaintenance') );
+
+        return '<div id="login_error"><p class="text-center">'. $message .'</p></div>';
+    }
+
+    /**
+     *
+     */
+    function admin_notices()
+    {
+        $edit_url = site_url() . '/wp-admin/admin.php?page=wp-smaintenance';
+
+        $message1 = __('Currently this site is in MAINTENANCE MODE.', 'wp-smaintenance');
+        $message2 = sprintf( __('To exit the maintenance mode just change the settings <a href="%s">clicking here</a>.', 'wp-smaintenance'), $edit_url);
+
+        $message = apply_filters( 'smaintenance_adminnotice', $message1. ' '. $message2 );
+
+        echo '<div id="message" class="error"><p>'. $message .'</p></div>';
     }
 
     /**
